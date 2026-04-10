@@ -2,3 +2,13 @@ node_modules/
 ios/App/Pods/
 ios/App/App.xcworkspace/xcuserdata/
 *.DS_Store
+
+# 敏感憑證檔案，絕對不能 commit
+*.p8
+*.p12
+*.pem
+*.key
+*.cer
+*.mobileprovision
+*_b64.txt
+*.csr
