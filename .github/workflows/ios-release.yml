@@ -45,9 +45,14 @@ jobs:
       - name: Install provisioning profile
         run: |
           echo "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode > distribution.mobileprovision
-          UUID=$(security cms -D -i distribution.mobileprovision | plutil -extract UUID raw -)
+          UUID=$(security cms -D -i distribution.mobileprovision | grep -A1 '<key>UUID</key>' | tail -1 | sed 's/.*<string>\(.*\)<\/string>/\1/' | tr -d '[:space:]')
+          NAME=$(security cms -D -i distribution.mobileprovision | grep -A1 '<key>Name</key>' | tail -1 | sed 's/.*<string>\(.*\)<\/string>/\1/')
+          echo "Profile UUID: $UUID"
+          echo "Profile Name: $NAME"
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp distribution.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${UUID}.mobileprovision
+          echo "Installed profiles:"
+          ls ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Run Fastlane
         env:
