@@ -14,7 +14,7 @@
     .lang-btn { padding: 8px 20px; border-radius: 20px; border: 1.5px solid #B5864A; background: transparent; color: #B5864A; cursor: pointer; font-size: 14px; }
     .lang-btn.active { background: #B5864A; color: white; }
     .section-en { display: none; }
-    .section-zh { display: block; }
+    .section-zh { display: none; }
     hr { border: none; border-top: 1px solid #E0D9CE; margin: 40px 0; }
     a { color: #B5864A; }
   </style>
@@ -88,6 +88,10 @@
 </div>
 
 <script>
+  var browserLang = navigator.language || navigator.userLanguage || 'en';
+  var defaultLang = browserLang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  setLang(defaultLang);
+
   function setLang(l) {
     document.getElementById('zh').style.display = l === 'zh' ? 'block' : 'none';
     document.getElementById('en').style.display = l === 'en' ? 'block' : 'none';
