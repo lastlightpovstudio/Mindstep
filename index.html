@@ -3618,13 +3618,145 @@ function choosePlan(plan) {
   showPaywall();
 }
 
-// Stripe Payment Links — REPLACE THESE with your real Stripe links
-var STRIPE_LINKS = {
-  monthly: 'https://buy.stripe.com/YOUR_MONTHLY_LINK',
-  yearly:  'https://buy.stripe.com/YOUR_YEARLY_LINK'
-};
+// RevenueCat public iOS key — replace with your key from RevenueCat dashboard
+var RC_IOS_API_KEY = 'appl_xbabNDhAigmTScBTkpthpTZZbzc';
+var _rcPlugin = null;
+var _rcOfferings = null;
+var _rcInitDone = false;
 
-// Free trial: 14 days from first launch
+function getRC() {
+  if (_rcPlugin) return _rcPlugin;
+  if (window.Capacitor && window.Capacitor.registerPlugin) {
+    _rcPlugin = window.Capacitor.registerPlugin('Purchases');
+  }
+  return _rcPlugin;
+}
+
+function isNativeApp() {
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+async function initRC() {
+  var rc = getRC();
+  if (!rc || _rcInitDone) return;
+  try {
+    await rc.configure({ apiKey: RC_IOS_API_KEY });
+    _rcInitDone = true;
+    loadRCOfferings();
+    checkRCStatus();
+  } catch(e) {
+    console.warn('RC init failed:', e);
+  }
+}
+
+async function loadRCOfferings() {
+  var rc = getRC();
+  if (!rc) return;
+  try {
+    var result = await rc.getOfferings();
+    _rcOfferings = result.current;
+  } catch(e) {
+    console.warn('RC offerings failed:', e);
+  }
+}
+
+async function checkRCStatus() {
+  var rc = getRC();
+  if (!rc) return;
+  try {
+    var result = await rc.getCustomerInfo();
+    var info = result.customerInfo;
+    var active = info && info.entitlements && info.entitlements.active;
+    if (active && active['premium']) {
+      var s = getSubState();
+      if (!s.subscribed) {
+        s.subscribed = true; s.plan = 'rc'; s.activatedAt = Date.now();
+        saveSubState(s);
+        var pw = document.getElementById('v11');
+        if (pw && pw.classList.contains('active')) dismissPaywall();
+        setLang(lang);
+      }
+    } else if (isNativeApp()) {
+      // On native, RevenueCat is authoritative — clear stale local cache
+      var s = getSubState();
+      if (s.subscribed) {
+        s.subscribed = false;
+        saveSubState(s);
+        if (!isTrialActive()) showPaywall();
+        setLang(lang);
+      }
+    }
+  } catch(e) {
+    console.warn('RC status check failed:', e);
+  }
+}
+
+async function purchaseWithRC() {
+  var rc = getRC();
+  if (!rc) {
+    showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
+    return;
+  }
+  if (!_rcOfferings) await loadRCOfferings();
+  var packages = _rcOfferings && _rcOfferings.availablePackages;
+  if (!packages || !packages.length) {
+    showToast(lang === 'zh' ? '無法載入購買選項，請稍後重試' : 'Could not load purchase options, please try again');
+    return;
+  }
+  var pkg = null;
+  if (selectedPlanId === 'yearly') {
+    pkg = packages.find(function(p) {
+      return p.packageType === 'ANNUAL' || p.identifier === '$rc_annual' ||
+             (p.product && p.product.productIdentifier && p.product.productIdentifier.includes('yearly'));
+    });
+  } else {
+    pkg = packages.find(function(p) {
+      return p.packageType === 'MONTHLY' || p.identifier === '$rc_monthly' ||
+             (p.product && p.product.productIdentifier && p.product.productIdentifier.includes('monthly'));
+    });
+  }
+  if (!pkg) pkg = packages[0];
+  if (!pkg) { showToast(lang === 'zh' ? '找不到方案，請重試' : 'Plan not found, please try again'); return; }
+  try {
+    var result = await rc.purchasePackage({ aPackage: pkg });
+    var info = result.customerInfo;
+    var active = info && info.entitlements && info.entitlements.active;
+    if (active && active['premium']) {
+      activateSubscription(selectedPlanId);
+      dismissPaywall();
+    }
+  } catch(e) {
+    if (e.code === 'PURCHASE_CANCELLED' || (e.message && e.message.toLowerCase().includes('cancel'))) return;
+    console.error('Purchase error:', e);
+    showToast(lang === 'zh' ? '購買失敗，請重試' : 'Purchase failed, please try again');
+  }
+}
+
+async function restorePurchaseRC() {
+  var rc = getRC();
+  if (!rc) {
+    alert(lang === 'zh' ? '請在 App 內恢復購買' : 'Restore only available in app');
+    return;
+  }
+  showToast(lang === 'zh' ? '正在恢復購買…' : 'Restoring purchases…');
+  try {
+    var result = await rc.restorePurchases();
+    var info = result.customerInfo;
+    var active = info && info.entitlements && info.entitlements.active;
+    if (active && active['premium']) {
+      activateSubscription('restored');
+      dismissPaywall();
+      showToast(lang === 'zh' ? '購買已恢復！' : 'Purchases restored!');
+    } else {
+      showToast(lang === 'zh' ? '找不到有效的訂閱' : 'No active subscription found');
+    }
+  } catch(e) {
+    console.error('Restore error:', e);
+    showToast(lang === 'zh' ? '恢復失敗，請重試' : 'Restore failed, please try again');
+  }
+}
+
+// Free trial: 30 days from first launch
 var TRIAL_DAYS = 30;
 
 function getSubState() {
@@ -3658,16 +3790,7 @@ function isTrialActive() {
 
 function isSubscribed() {
   var s = getSubState();
-  if (s.subscribed) return true;
-  // Check Stripe success param in URL
-  var params = new URLSearchParams(window.location.search);
-  if (params.get('payment') === 'success') {
-    var plan = params.get('plan') || 'monthly';
-    activateSubscription(plan);
-    history.replaceState({view:cur}, '', window.location.pathname);
-    return true;
-  }
-  return false;
+  return !!s.subscribed;
 }
 
 function activateSubscription(plan) {
@@ -3747,7 +3870,7 @@ function selectPlan(planId) {
       yearly.style.background = 'var(--green-lt)';
       monthly.style.border = '1.5px solid var(--border)';
       monthly.style.background = 'var(--card)';
-      if (cta) cta.textContent = lang === 'zh' ? '訂閱年費 $20.00 →' : 'Subscribe Yearly $20.00 →';
+      if (cta) cta.textContent = lang === 'zh' ? '訂閱年費 $17.99 →' : 'Subscribe Yearly $17.99 →';
     } else {
       monthly.style.border = '2.5px solid var(--ink)';
       monthly.style.background = 'var(--gold-lt)';
@@ -3758,24 +3881,6 @@ function selectPlan(planId) {
   }
 }
 
-function goToStripe() {
-  var link = STRIPE_LINKS[selectedPlanId];
-  if (!link || link.includes('YOUR_')) {
-    showToast(lang === 'zh' ? '付款系統設定中，敬請期待。' : 'Payment system coming soon.');
-    return;
-  }
-  // NOTE: Configure success redirect in Stripe dashboard to:
-  // https://yourdomain.com/?payment=success&plan=<planId>
-  // Stripe Payment Links do not support ?success_url= as a query param.
-  window.location.href = link;
-}
-
-function restorePurchase() {
-  var msg = lang === 'zh'
-    ? '如需恢復購買記錄，請聯絡 lastlightpovstudio@gmail.com'
-    : 'To restore your purchase, please contact lastlightpovstudio@gmail.com';
-  alert(msg);
-}
 
 function dismissPaywall() {
   var pw = document.getElementById('v11');
@@ -3824,8 +3929,8 @@ history.replaceState({view: cur}, '', '');
 
 // Init trial date on first launch
 initTrialIfNeeded();
-// Check Stripe success return
-isSubscribed();
+// Init RevenueCat (async)
+initRC();
 // Auto-show paywall if trial expired (small delay so app loads first)
 setTimeout(function() {
   if (!isSubscribed() && !isTrialActive()) {
@@ -3962,12 +4067,12 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <!-- Subscribe button -->
-        <button onclick="goToStripe()" id="pw-cta"
+        <button onclick="purchaseWithRC()" id="pw-cta"
           style="width:100%;max-width:400px;padding:16px;background:var(--ink);color:white;border:none;border-radius:14px;font-family:var(--serif);font-size:18px;font-weight:600;cursor:pointer;margin-bottom:16px"
           data-en="Subscribe now →" data-zh="立即訂閱 →">Subscribe now →</button>
         
         <!-- Restore + skip -->
-        <button onclick="restorePurchase()"
+        <button onclick="restorePurchaseRC()"
           style="background:none;border:none;font-family:var(--mono);font-size:12px;color:var(--ink-dim);cursor:pointer;margin-bottom:8px;padding:8px"
           data-en="Restore purchase" data-zh="恢復購買記錄">Restore purchase</button>
         
