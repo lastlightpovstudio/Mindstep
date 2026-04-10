@@ -3625,7 +3625,7 @@ var STRIPE_LINKS = {
 };
 
 // Free trial: 14 days from first launch
-var TRIAL_DAYS = 14;
+var TRIAL_DAYS = 30;
 
 function getSubState() {
   try {
@@ -3702,8 +3702,8 @@ function showPaywall() {
   if (pwTitle) {
     if (trialExpired) {
       pwTitle.textContent = lang === 'zh'
-        ? '14天免費試用已結束。'
-        : 'Your 14-day free trial has ended.';
+        ? '30天免費試用已結束。'
+        : 'Your 30-day free trial has ended.';
     } else {
       pwTitle.textContent = lang === 'zh'
         ? '還有 ' + daysLeft + ' 天免費試用。'
@@ -3712,8 +3712,8 @@ function showPaywall() {
   }
   if (pwSub) {
     pwSub.textContent = lang === 'zh'
-      ? '訂閱後繼續使用全部 25 個心理工具，不間斷。'
-      : 'Subscribe to keep full access to all 25 psychology tools.';
+      ? '訂閱後繼續使用全部 Mindstep 工具，不間斷。'
+      : 'Subscribe to keep full access to all Mindstep tools.';
   }
 
   // Features are pre-populated in HTML
@@ -3911,8 +3911,8 @@ if ('serviceWorker' in navigator) {
         <div style="margin-bottom:8px;font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--ink-dim)">MINDSTEP</div>
         <div style="font-size:36px;margin-bottom:20px">🌱</div>
         
-        <h2 style="font-family:var(--serif);font-size:26px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:12px" id="pw-title">Your 14-day free trial has ended.</h2>
-        <p style="font-family:var(--serif);font-size:16px;color:var(--ink-mid);line-height:1.8;margin-bottom:36px;max-width:320px" id="pw-sub">Subscribe to keep full access to all 25 psychology tools.</p>
+        <h2 style="font-family:var(--serif);font-size:26px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:12px" id="pw-title">Your 30-day free trial has ended.</h2>
+        <p style="font-family:var(--serif);font-size:16px;color:var(--ink-mid);line-height:1.8;margin-bottom:36px;max-width:320px" id="pw-sub">Subscribe to keep full access to all Mindstep tools.</p>
         
         <!-- Plan cards -->
         <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;margin-bottom:32px">
@@ -3924,10 +3924,10 @@ if ('serviceWorker' in navigator) {
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div style="text-align:left">
                 <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--ink)" data-en="Yearly" data-zh="年費">Yearly</div>
-                <div style="font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-top:2px" data-en="$1.67 / month" data-zh="每月約 $1.67">$1.67 / month</div>
+                <div style="font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-top:2px" data-en="$1.50 / month" data-zh="每月約 $1.50">$1.50 / month</div>
               </div>
               <div style="text-align:right">
-                <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--green)">$20.00</div>
+                <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--green)">$17.99</div>
                 <div style="font-family:var(--mono);font-size:11px;color:var(--ink-dim)" data-en="per year" data-zh="每年">per year</div>
               </div>
             </div>
@@ -3953,7 +3953,7 @@ if ('serviceWorker' in navigator) {
         <div style="width:100%;max-width:400px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:28px;text-align:left">
           <div style="font-family:var(--mono);font-size:11px;color:var(--ink-dim);letter-spacing:1.5px;margin-bottom:14px" data-en="WHAT YOU GET" data-zh="訂閱包含">WHAT YOU GET</div>
           <div id="pw-features">
-            <div class="pw-feat" data-en="✓  All 25 psychology tools" data-zh="✓  全部 25 個心理工具" style="font-family:var(--serif);font-size:15px;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--border)">✓  All 25 psychology tools</div>
+            <div class="pw-feat" data-en="✓  All Mindstep tools" data-zh="✓  全部 25 個心理工具" style="font-family:var(--serif);font-size:15px;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--border)">✓  All Mindstep tools</div>
             <div class="pw-feat" data-en="✓  Unlimited practice sessions" data-zh="✓  無限次練習" style="font-family:var(--serif);font-size:15px;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--border)">✓  Unlimited practice sessions</div>
             <div class="pw-feat" data-en="✓  Full journal & reflection history" data-zh="✓  完整日記與反思記錄" style="font-family:var(--serif);font-size:15px;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--border)">✓  Full journal & reflection history</div>
             <div class="pw-feat" data-en="✓  Multi-thread topic tracking" data-zh="✓  多線程議題追蹤" style="font-family:var(--serif);font-size:15px;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--border)">✓  Multi-thread topic tracking</div>
