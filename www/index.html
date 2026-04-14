@@ -3654,7 +3654,16 @@ async function loadRCOfferings() {
   if (!rc) return;
   try {
     var result = await rc.getOfferings();
-    _rcOfferings = result.current;
+    // Use current offering; fall back to first available offering if current is null
+    if (result.current) {
+      _rcOfferings = result.current;
+    } else if (result.all) {
+      var keys = Object.keys(result.all);
+      if (keys.length > 0) _rcOfferings = result.all[keys[0]];
+    }
+    if (!_rcOfferings) {
+      console.warn('RC: no offerings available — check RevenueCat dashboard');
+    }
   } catch(e) {
     console.warn('RC offerings failed:', e);
   }
@@ -3929,8 +3938,14 @@ history.replaceState({view: cur}, '', '');
 
 // Init trial date on first launch
 initTrialIfNeeded();
-// Init RevenueCat (async)
-initRC();
+// Init RevenueCat after Capacitor bridge is ready
+if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+  document.addEventListener('deviceready', initRC, false);
+  // Fallback: also try after a short delay in case deviceready already fired
+  setTimeout(function() { if (!_rcInitDone) initRC(); }, 1000);
+} else {
+  initRC();
+}
 // Auto-show paywall if trial expired (small delay so app loads first)
 setTimeout(function() {
   if (!isSubscribed() && !isTrialActive()) {
