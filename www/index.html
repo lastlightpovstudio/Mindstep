@@ -30,7 +30,7 @@
   --mono:     'DM Mono', monospace;
 }
 
-.phone { width:100%; background:#F5F0E8; display:flex; flex-direction:column; height:100vh; height:-webkit-fill-available; position:fixed; inset:0; overflow:hidden; }
+.phone { width:100%; background:#F5F0E8; display:flex; flex-direction:column; height:100vh; height:-webkit-fill-available; position:fixed; inset:0; overflow:hidden; padding-top: env(safe-area-inset-top); }
 .status { display:none; }
 
 /* ── iPad / large screens: letterbox to phone width ── */
@@ -4107,7 +4107,7 @@ if ('serviceWorker' in navigator) {
           <p style="margin-top:10px;text-align:center">
             <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Terms of Use" data-zh="使用條款">Terms of Use</a>
             &nbsp;·&nbsp;
-            <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Privacy Policy" data-zh="隱私政策">Privacy Policy</a>
+            <a href="https://lastlightpovstudio.github.io/Mindstep/privacy.html" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Privacy Policy" data-zh="隱私政策">Privacy Policy</a>
           </p>
         </div>
       </div>
