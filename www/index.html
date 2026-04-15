@@ -32,6 +32,19 @@
 
 .phone { width:100%; background:#F5F0E8; display:flex; flex-direction:column; height:100vh; height:-webkit-fill-available; position:fixed; inset:0; overflow:hidden; }
 .status { display:none; }
+
+/* ── iPad / large screens: letterbox to phone width ── */
+@media (min-width: 768px) {
+  html, body { background: #2a2520; }
+  .phone {
+    left: 50%;
+    right: auto;
+    width: 100%;
+    max-width: 430px;
+    transform: translateX(-50%);
+    box-shadow: 0 10px 60px rgba(0,0,0,0.35);
+  }
+}
 .status-time { display:none; }
 .status-r { display: flex; gap: 8px; align-items: center; }
 .lang-sw { display: flex; background: rgba(0,0,0,0.06); border-radius: 20px; padding: 2px; }
@@ -504,17 +517,9 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <meta name="theme-color" content="#F5F0E8">
 
-  <!-- Google Analytics 4 — replace G-XXXXXXXXXX with your Measurement ID -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX');
-    // Helper: track events anywhere in the app
-    function trackEvent(name, params) {
-      if (typeof gtag === 'function') gtag('event', name, params || {});
-    }
+    // No analytics, no tracking — see privacy.html.
+    function trackEvent() {}
   </script>
 </head>
 <body>
@@ -4096,7 +4101,15 @@ if ('serviceWorker' in navigator) {
           data-en="Maybe later" data-zh="稍後再說">Maybe later</button>
 
         <!-- Legal -->
-        <p style="font-family:var(--mono);font-size:10px;color:var(--ink-dim);margin-top:24px;line-height:1.6;max-width:340px" data-en="Cancel anytime. Prices in USD." data-zh="隨時取消。價格以美元計算。">Cancel anytime. Prices in USD.</p>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--ink-dim);margin-top:24px;line-height:1.7;max-width:340px;text-align:left">
+          <p data-en="Payment will be charged to your Apple ID at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your Apple ID account settings after purchase. Prices are in USD."
+             data-zh="購買確認後將向您的 Apple ID 收取費用。訂閱會自動續訂，除非在當期結束前至少 24 小時關閉自動續訂。Apple 將在當期結束前 24 小時內收取續訂費用。購買後可於 Apple ID 帳號設定中管理或取消訂閱。價格以美元計算。">Payment will be charged to your Apple ID at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions in your Apple ID account settings after purchase. Prices are in USD.</p>
+          <p style="margin-top:10px;text-align:center">
+            <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Terms of Use" data-zh="使用條款">Terms of Use</a>
+            &nbsp;·&nbsp;
+            <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Privacy Policy" data-zh="隱私政策">Privacy Policy</a>
+          </p>
+        </div>
       </div>
     </div>
   </div>
