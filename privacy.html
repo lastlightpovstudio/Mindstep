@@ -88,8 +88,11 @@
 </div>
 
 <script>
+  var urlLang = (new URLSearchParams(location.search)).get('lang');
   var browserLang = navigator.language || navigator.userLanguage || 'en';
-  var defaultLang = browserLang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  var defaultLang = urlLang === 'zh' || urlLang === 'en'
+    ? urlLang
+    : (browserLang.toLowerCase().startsWith('zh') ? 'zh' : 'en');
   setLang(defaultLang);
 
   function setLang(l) {
