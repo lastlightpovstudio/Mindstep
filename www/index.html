@@ -969,6 +969,10 @@
 <script>
 // ── STATE ──
 let lang = 'en', cur = 1;
+window.openPrivacy = function() {
+  window.open('https://lastlightpovstudio.github.io/Mindstep/privacy.html?lang=' + (lang === 'zh' ? 'zh' : 'en'), '_blank');
+  return false;
+};
 let selectedTopic = '', selectedToolName = '';
 let ans = {q1:-1, q2:-1, q3:-1};
 let threads = [];
@@ -4107,7 +4111,7 @@ if ('serviceWorker' in navigator) {
           <p style="margin-top:10px;text-align:center">
             <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Terms of Use" data-zh="使用條款">Terms of Use</a>
             &nbsp;·&nbsp;
-            <a href="https://lastlightpovstudio.github.io/Mindstep/privacy.html" onclick="event.preventDefault();window.open('https://lastlightpovstudio.github.io/Mindstep/privacy.html?lang='+(typeof lang!=='undefined'?lang:'en'),'_blank');return false;" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Privacy Policy" data-zh="隱私政策">Privacy Policy</a>
+            <a href="https://lastlightpovstudio.github.io/Mindstep/privacy.html" onclick="event.preventDefault();return openPrivacy();" target="_blank" rel="noopener" style="color:var(--ink-mid);text-decoration:underline" data-en="Privacy Policy" data-zh="隱私政策">Privacy Policy</a>
           </p>
         </div>
       </div>
