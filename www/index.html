@@ -3632,6 +3632,8 @@ var RC_IOS_API_KEY = 'appl_xbabNDhAigmTScBTkpthpTZZbzc';
 var _rcPlugin = null;
 var _rcOfferings = null;
 var _rcInitDone = false;
+var _rcInitPromise = null;
+var _rcLastError = null;
 
 function getRC() {
   if (_rcPlugin) return _rcPlugin;
@@ -3645,17 +3647,25 @@ function isNativeApp() {
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 
-async function initRC() {
-  var rc = getRC();
-  if (!rc || _rcInitDone) return;
-  try {
-    await rc.configure({ apiKey: RC_IOS_API_KEY });
-    _rcInitDone = true;
-    loadRCOfferings();
-    checkRCStatus();
-  } catch(e) {
-    console.warn('RC init failed:', e);
-  }
+function initRC() {
+  if (_rcInitPromise) return _rcInitPromise;
+  _rcInitPromise = (async function() {
+    var rc = getRC();
+    if (!rc) return;
+    if (_rcInitDone) return;
+    try {
+      await rc.configure({ apiKey: RC_IOS_API_KEY });
+      _rcInitDone = true;
+      _rcLastError = null;
+      await loadRCOfferings();
+      checkRCStatus();
+    } catch(e) {
+      _rcLastError = (e && (e.message || e.code)) ? String(e.message || e.code) : 'init failed';
+      console.warn('RC init failed:', e);
+      _rcInitPromise = null; // allow retry
+    }
+  })();
+  return _rcInitPromise;
 }
 
 async function loadRCOfferings() {
@@ -3663,17 +3673,21 @@ async function loadRCOfferings() {
   if (!rc) return;
   try {
     var result = await rc.getOfferings();
-    // Use current offering; fall back to first available offering if current is null
-    if (result.current) {
+    _rcOfferings = null;
+    if (result && result.current) {
       _rcOfferings = result.current;
-    } else if (result.all) {
+    } else if (result && result.all) {
       var keys = Object.keys(result.all);
       if (keys.length > 0) _rcOfferings = result.all[keys[0]];
     }
     if (!_rcOfferings) {
+      _rcLastError = 'no offerings configured';
       console.warn('RC: no offerings available — check RevenueCat dashboard');
+    } else {
+      _rcLastError = null;
     }
   } catch(e) {
+    _rcLastError = (e && (e.message || e.code)) ? String(e.message || e.code) : 'offerings failed';
     console.warn('RC offerings failed:', e);
   }
 }
@@ -3715,10 +3729,15 @@ async function purchaseWithRC() {
     showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
     return;
   }
+  if (!_rcInitDone) {
+    showToast(lang === 'zh' ? '正在連線商店…' : 'Connecting to store…');
+    await initRC();
+  }
   if (!_rcOfferings) await loadRCOfferings();
   var packages = _rcOfferings && _rcOfferings.availablePackages;
   if (!packages || !packages.length) {
-    showToast(lang === 'zh' ? '無法載入購買選項，請稍後重試' : 'Could not load purchase options, please try again');
+    var detail = _rcLastError ? ' (' + _rcLastError + ')' : '';
+    showToast((lang === 'zh' ? '無法載入購買選項' : 'Could not load purchase options') + detail);
     return;
   }
   var pkg = null;
@@ -3737,16 +3756,18 @@ async function purchaseWithRC() {
   if (!pkg) { showToast(lang === 'zh' ? '找不到方案，請重試' : 'Plan not found, please try again'); return; }
   try {
     var result = await rc.purchasePackage({ aPackage: pkg });
-    var info = result.customerInfo;
+    var info = result && result.customerInfo;
     var active = info && info.entitlements && info.entitlements.active;
     if (active && active['premium']) {
       activateSubscription(selectedPlanId);
       dismissPaywall();
     }
   } catch(e) {
-    if (e.code === 'PURCHASE_CANCELLED' || (e.message && e.message.toLowerCase().includes('cancel'))) return;
+    if (e && (e.userCancelled === true || e.code === 'PURCHASE_CANCELLED' ||
+        (e.message && e.message.toLowerCase().includes('cancel')))) return;
     console.error('Purchase error:', e);
-    showToast(lang === 'zh' ? '購買失敗，請重試' : 'Purchase failed, please try again');
+    var msg = (e && (e.message || e.code)) ? String(e.message || e.code) : 'unknown error';
+    showToast((lang === 'zh' ? '購買失敗：' : 'Purchase failed: ') + msg);
   }
 }
 
@@ -3756,10 +3777,11 @@ async function restorePurchaseRC() {
     alert(lang === 'zh' ? '請在 App 內恢復購買' : 'Restore only available in app');
     return;
   }
+  if (!_rcInitDone) await initRC();
   showToast(lang === 'zh' ? '正在恢復購買…' : 'Restoring purchases…');
   try {
     var result = await rc.restorePurchases();
-    var info = result.customerInfo;
+    var info = result && result.customerInfo;
     var active = info && info.entitlements && info.entitlements.active;
     if (active && active['premium']) {
       activateSubscription('restored');
@@ -3770,7 +3792,8 @@ async function restorePurchaseRC() {
     }
   } catch(e) {
     console.error('Restore error:', e);
-    showToast(lang === 'zh' ? '恢復失敗，請重試' : 'Restore failed, please try again');
+    var msg = (e && (e.message || e.code)) ? String(e.message || e.code) : 'unknown error';
+    showToast((lang === 'zh' ? '恢復失敗：' : 'Restore failed: ') + msg);
   }
 }
 
@@ -3947,14 +3970,9 @@ history.replaceState({view: cur}, '', '');
 
 // Init trial date on first launch
 initTrialIfNeeded();
-// Init RevenueCat after Capacitor bridge is ready
-if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-  document.addEventListener('deviceready', initRC, false);
-  // Fallback: also try after a short delay in case deviceready already fired
-  setTimeout(function() { if (!_rcInitDone) initRC(); }, 1000);
-} else {
-  initRC();
-}
+// Init RevenueCat — Capacitor bridge is ready by the time this script runs
+// (deviceready is a Cordova event and never fires in pure Capacitor).
+initRC();
 // Auto-show paywall if trial expired (small delay so app loads first)
 setTimeout(function() {
   if (!isSubscribed() && !isTrialActive()) {
