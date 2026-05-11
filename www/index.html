@@ -3692,14 +3692,21 @@ async function loadRCOfferings() {
   }
 }
 
+// Any RevenueCat entitlement counts as premium access (we use a single
+// entitlement per project — matching by name was fragile and broke when
+// the dashboard identifier was "Mindstep Premium" instead of "premium").
+function hasActiveEntitlement(active) {
+  return !!(active && typeof active === 'object' && Object.keys(active).length > 0);
+}
+
 async function checkRCStatus() {
   var rc = getRC();
   if (!rc) return;
   try {
     var result = await rc.getCustomerInfo();
-    var info = result.customerInfo;
+    var info = result && result.customerInfo;
     var active = info && info.entitlements && info.entitlements.active;
-    if (active && active['premium']) {
+    if (hasActiveEntitlement(active)) {
       var s = getSubState();
       if (!s.subscribed) {
         s.subscribed = true; s.plan = 'rc'; s.activatedAt = Date.now();
@@ -3758,9 +3765,11 @@ async function purchaseWithRC() {
     var result = await rc.purchasePackage({ aPackage: pkg });
     var info = result && result.customerInfo;
     var active = info && info.entitlements && info.entitlements.active;
-    if (active && active['premium']) {
+    if (hasActiveEntitlement(active)) {
       activateSubscription(selectedPlanId);
       dismissPaywall();
+    } else {
+      showToast(lang === 'zh' ? '購買完成但未啟用，請稍後重試或恢復購買' : 'Purchase completed but not activated; try Restore Purchases');
     }
   } catch(e) {
     if (e && (e.userCancelled === true || e.code === 'PURCHASE_CANCELLED' ||
@@ -3783,7 +3792,7 @@ async function restorePurchaseRC() {
     var result = await rc.restorePurchases();
     var info = result && result.customerInfo;
     var active = info && info.entitlements && info.entitlements.active;
-    if (active && active['premium']) {
+    if (hasActiveEntitlement(active)) {
       activateSubscription('restored');
       dismissPaywall();
       showToast(lang === 'zh' ? '購買已恢復！' : 'Purchases restored!');
