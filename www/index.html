@@ -4008,12 +4008,31 @@ window.addEventListener('popstate', function(e) {
 updateResumeCard();
 
 // ── PWA Service Worker ──
+// CRITICAL: do NOT register SW inside the Capacitor native app. WKWebView
+// has a known issue where a SW that intercepts the initial navigation
+// prevents Capacitor's bridge user-script from being injected — meaning
+// window.Capacitor ends up undefined, breaking IAP and any other plugin.
+// SW is only useful for the PWA web version.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js').catch(function(err) {
-      console.log('SW registration failed:', err);
+  if (isNativeApp()) {
+    // Cleanup: a previous build of this app registered a SW on this device.
+    // After the update, the stale SW would still intercept requests and
+    // disable the bridge. Unregister anything we find.
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    }).catch(function(){});
+    if (window.caches && caches.keys) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) { caches.delete(k); });
+      }).catch(function(){});
+    }
+  } else {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js').catch(function(err) {
+        console.log('SW registration failed:', err);
+      });
     });
-  });
+  }
 }
 </script>
 
