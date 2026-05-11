@@ -3733,7 +3733,14 @@ async function checkRCStatus() {
 async function purchaseWithRC() {
   var rc = getRC();
   if (!rc) {
-    showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
+    // _isCapacitorEnv may not exist yet if this code runs from a really old
+    // bundle, so guard against ReferenceError.
+    var inNative = (typeof _isCapacitorEnv !== 'undefined' && _isCapacitorEnv);
+    if (inNative) {
+      showToast(lang === 'zh' ? '商店連線初始化失敗，請完全關閉並重新打開 App' : 'Store bridge unavailable — please fully quit and reopen the app');
+    } else {
+      showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
+    }
     return;
   }
   if (!_rcInitDone) {
@@ -4011,13 +4018,20 @@ updateResumeCard();
 // CRITICAL: do NOT register SW inside the Capacitor native app. WKWebView
 // has a known issue where a SW that intercepts the initial navigation
 // prevents Capacitor's bridge user-script from being injected — meaning
-// window.Capacitor ends up undefined, breaking IAP and any other plugin.
-// SW is only useful for the PWA web version.
+// window.Capacitor ends up undefined, breaking IAP and every other plugin.
+//
+// We detect "native" by URL scheme rather than by window.Capacitor, because
+// the whole point of this cleanup is to recover from the case where the
+// stale SW already broke Capacitor injection on this load.
+var _isCapacitorEnv = (window.location.protocol === 'capacitor:' ||
+                       window.location.protocol === 'ionic:' ||
+                       window.location.hostname === 'localhost' && window.location.protocol !== 'http:' && window.location.protocol !== 'https:');
 if ('serviceWorker' in navigator) {
-  if (isNativeApp()) {
-    // Cleanup: a previous build of this app registered a SW on this device.
-    // After the update, the stale SW would still intercept requests and
-    // disable the bridge. Unregister anything we find.
+  if (_isCapacitorEnv) {
+    // A previous build of this app registered a SW on this device. After
+    // the update the stale SW keeps intercepting and the bridge stays dead.
+    // Unregister everything we find and purge caches — the next launch
+    // loads cleanly.
     navigator.serviceWorker.getRegistrations().then(function(regs) {
       regs.forEach(function(r) { r.unregister(); });
     }).catch(function(){});
