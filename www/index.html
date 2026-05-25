@@ -3814,15 +3814,14 @@ async function purchaseWithRC() {
   if (!pkg) pkg = packages[0];
   if (!pkg) { showToast(lang === 'zh' ? '找不到方案，請重試' : 'Plan not found, please try again'); return; }
   try {
-    var result = await rc.purchasePackage({ aPackage: pkg });
-    var info = result && result.customerInfo;
-    var active = info && info.entitlements && info.entitlements.active;
-    if (hasActiveEntitlement(active)) {
-      activateSubscription(selectedPlanId);
-      dismissPaywall();
-    } else {
-      showToast(lang === 'zh' ? '購買完成但未啟用，請稍後重試或恢復購買' : 'Purchase completed but not activated; try Restore Purchases');
-    }
+    await rc.purchasePackage({ aPackage: pkg });
+    // StoreKit confirmed the transaction (no exception). RC's returned
+    // customerInfo can lag behind StoreKit by a moment, so we activate
+    // optimistically on the resolved promise — checkRCStatus() on the
+    // next app launch / resume reconciles authoritatively.
+    activateSubscription(selectedPlanId);
+    dismissPaywall();
+    setLang(lang);
   } catch(e) {
     if (e && (e.userCancelled === true || e.code === 'PURCHASE_CANCELLED' ||
         (e.message && e.message.toLowerCase().includes('cancel')))) return;
@@ -3847,6 +3846,7 @@ async function restorePurchaseRC() {
     if (hasActiveEntitlement(active)) {
       activateSubscription('restored');
       dismissPaywall();
+      setLang(lang);
       showToast(lang === 'zh' ? '購買已恢復！' : 'Purchases restored!');
     } else {
       showToast(lang === 'zh' ? '找不到有效的訂閱' : 'No active subscription found');
