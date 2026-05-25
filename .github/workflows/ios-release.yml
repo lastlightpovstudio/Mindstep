@@ -35,6 +35,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Inline native-bridge.js into index.html (iOS 26 SDK bundle workaround)
+        run: |
+          python3 - <<'PY'
+          src = open('node_modules/@capacitor/ios/Capacitor/Capacitor/assets/native-bridge.js').read()
+          html = open('www/index.html').read()
+          start = '/* @CAP_BRIDGE_INLINE_START@ */'
+          end = '/* @CAP_BRIDGE_INLINE_END@ */'
+          i = html.index(start) + len(start)
+          j = html.index(end)
+          new = html[:i] + '\n' + src + '\n' + html[j:]
+          open('www/index.html','w').write(new)
+          print(f'Inlined {len(src)} bytes of native-bridge.js into index.html')
+          PY
+
       - name: Sync Capacitor
         run: npx cap sync ios
 

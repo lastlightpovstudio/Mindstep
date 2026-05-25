@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Mindstep</title>
+<script>
+// Workaround: under Xcode 26 SDK / iOS 26 runtime, Capacitor's WKUserScript
+// for native-bridge.js fails to find the resource in the SPM xcframework
+// bundle (Bundle(forResource:withExtension:) returns nil). User-script #1
+// still runs so window.Capacitor exists as an object, but it has no
+// registerPlugin / Plugins / etc. — every IAP call dies with "Store bridge
+// unavailable". Detect that state and run the same bridge JS inline.
+// The CI workflow replaces the placeholder below with the actual contents
+// of node_modules/@capacitor/ios/Capacitor/Capacitor/assets/native-bridge.js
+// at build time. Guarded so it is a no-op on web and on installs where the
+// native bundle did inject the bridge correctly.
+(function(){
+  if (typeof window.Capacitor !== 'object') return;
+  if (typeof window.Capacitor.registerPlugin === 'function') return;
+  try {
+    /* @CAP_BRIDGE_INLINE_START@ */
+    /* @CAP_BRIDGE_INLINE_END@ */
+  } catch(e) {
+    // Surface failure via the same toast path used elsewhere — at this point
+    // showToast doesn't exist yet, so set a flag the main script can read.
+    window.__capBridgeFallbackError = String(e && (e.message || e));
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&family=Noto+Serif+TC:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
@@ -3740,7 +3764,8 @@ async function purchaseWithRC() {
       var pluginsType = (window.Capacitor && typeof window.Capacitor.Plugins) || 'n/a';
       var isNative = (window.Capacitor && window.Capacitor.isNativePlatform && typeof window.Capacitor.isNativePlatform === 'function') ? String(window.Capacitor.isNativePlatform()) : 'n/a';
       var proto = window.location.protocol;
-      var diag = 'BRIDGE FAIL Cap=' + capType + ' reg=' + regType + ' Plugins=' + pluginsType + ' native=' + isNative + ' proto=' + proto + ' err=' + (_rcLastError || 'null');
+      var fbErr = window.__capBridgeFallbackError || 'no-fb-err';
+      var diag = 'BRIDGE FAIL Cap=' + capType + ' reg=' + regType + ' Plugins=' + pluginsType + ' native=' + isNative + ' proto=' + proto + ' fb=' + fbErr + ' err=' + (_rcLastError || 'null');
       showToast(diag);
     } else {
       showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
