@@ -3733,11 +3733,15 @@ async function checkRCStatus() {
 async function purchaseWithRC() {
   var rc = getRC();
   if (!rc) {
-    // _isCapacitorEnv may not exist yet if this code runs from a really old
-    // bundle, so guard against ReferenceError.
     var inNative = (typeof _isCapacitorEnv !== 'undefined' && _isCapacitorEnv);
     if (inNative) {
-      showToast(lang === 'zh' ? '商店連線初始化失敗，請完全關閉並重新打開 App' : 'Store bridge unavailable — please fully quit and reopen the app');
+      var capType = typeof window.Capacitor;
+      var regType = (window.Capacitor && typeof window.Capacitor.registerPlugin) || 'n/a';
+      var pluginsType = (window.Capacitor && typeof window.Capacitor.Plugins) || 'n/a';
+      var isNative = (window.Capacitor && window.Capacitor.isNativePlatform && typeof window.Capacitor.isNativePlatform === 'function') ? String(window.Capacitor.isNativePlatform()) : 'n/a';
+      var proto = window.location.protocol;
+      var diag = 'BRIDGE FAIL Cap=' + capType + ' reg=' + regType + ' Plugins=' + pluginsType + ' native=' + isNative + ' proto=' + proto + ' err=' + (_rcLastError || 'null');
+      showToast(diag);
     } else {
       showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
     }
