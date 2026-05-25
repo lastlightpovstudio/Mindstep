@@ -15,15 +15,15 @@
 // of node_modules/@capacitor/ios/Capacitor/Capacitor/assets/native-bridge.js
 // at build time. Guarded so it is a no-op on web and on installs where the
 // native bundle did inject the bridge correctly.
+window.__capBridgeFallbackRan = false;
 (function(){
   if (typeof window.Capacitor !== 'object') return;
   if (typeof window.Capacitor.registerPlugin === 'function') return;
+  window.__capBridgeFallbackRan = true;
   try {
     /* @CAP_BRIDGE_INLINE_START@ */
     /* @CAP_BRIDGE_INLINE_END@ */
   } catch(e) {
-    // Surface failure via the same toast path used elsewhere — at this point
-    // showToast doesn't exist yet, so set a flag the main script can read.
     window.__capBridgeFallbackError = String(e && (e.message || e));
   }
 })();
@@ -3765,8 +3765,17 @@ async function purchaseWithRC() {
       var isNative = (window.Capacitor && window.Capacitor.isNativePlatform && typeof window.Capacitor.isNativePlatform === 'function') ? String(window.Capacitor.isNativePlatform()) : 'n/a';
       var proto = window.location.protocol;
       var fbErr = window.__capBridgeFallbackError || 'no-fb-err';
-      var diag = 'BRIDGE FAIL Cap=' + capType + ' reg=' + regType + ' Plugins=' + pluginsType + ' native=' + isNative + ' proto=' + proto + ' fb=' + fbErr + ' err=' + (_rcLastError || 'null');
-      showToast(diag);
+      var fbRan = (window.__capBridgeFallbackRan === true) ? 'yes' : (window.__capBridgeFallbackRan === false ? 'no' : 'unknown');
+      var diag = 'BRIDGE FAIL\n\n' +
+                 'Cap=' + capType + '\n' +
+                 'reg=' + regType + '\n' +
+                 'Plugins=' + pluginsType + '\n' +
+                 'native=' + isNative + '\n' +
+                 'proto=' + proto + '\n' +
+                 'fb_ran=' + fbRan + '\n' +
+                 'fb_err=' + fbErr + '\n' +
+                 'rc_err=' + (_rcLastError || 'null');
+      alert(diag);
     } else {
       showToast(lang === 'zh' ? '請在 App 內購買' : 'Please purchase within the app');
     }
