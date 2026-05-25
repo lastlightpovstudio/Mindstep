@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Copy @capacitor/core runtime to www/capacitor-core.js
+        run: cp node_modules/@capacitor/core/dist/capacitor.js www/capacitor-core.js
+
       - name: Inline native-bridge.js into index.html (iOS 26 SDK bundle workaround)
         run: |
           python3 - <<'PY'

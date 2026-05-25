@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Mindstep</title>
+<!-- Capacitor JS runtime — provides window.Capacitor.registerPlugin and the
+     web-side helper machinery. The native side only injects native-bridge.js
+     (platform detection, postToNative, fromNative). registerPlugin lives in
+     @capacitor/core's browser bundle, which CI copies to www/capacitor-core.js
+     before build. Must load BEFORE the inline native-bridge fallback below so
+     the fallback's "is registerPlugin defined?" guard reads the correct state. -->
+<script src="capacitor-core.js"></script>
 <script>
 // Workaround: under Xcode 26 SDK / iOS 26 runtime, Capacitor's WKUserScript
 // for native-bridge.js fails to find the resource in the SPM xcframework
