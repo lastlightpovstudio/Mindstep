@@ -49,8 +49,14 @@ jobs:
           print(f'Inlined {len(src)} bytes of native-bridge.js into index.html')
           PY
 
-      - name: Sync Capacitor
+      - name: Install CocoaPods
+        run: gem install cocoapods --no-document
+
+      - name: Sync Capacitor (runs pod install internally on CocoaPods projects)
         run: npx cap sync ios
+
+      - name: Ensure Pods are up to date
+        run: cd ios/App && pod install --repo-update
 
       - name: Build p12 and import certificate
         run: |
